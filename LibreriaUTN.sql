@@ -41,6 +41,7 @@
 --	CantidadDePaginas INT NOT NULL,
 --	FechaDePublicacion DATETIME NOT NULL,
 --	IDEditorial INT NOT NULL FOREIGN KEY REFERENCES Editorial(IDEditorial),
+--	Stock INT NOT NULL,
 --	Precio MONEY NOT NULL
 --)
 --GO
@@ -64,3 +65,136 @@
 --	IDLibroDevuelto INT FOREIGN KEY REFERENCES Libro(IDLibro)
 --)
 --GO
+
+--INSERTS DE DATOS
+
+--CLIENTE
+--INSERT INTO Cliente (DNI, Nombre, Apellido, Telefono, Mail) VALUES
+--(12345678, 'Juan', 'Pérez', 123456789, 'juan.perez@example.com'),
+--(87654321, 'María', 'Gómez', 987654321, 'maria.gomez@example.com'),
+--(11223344, 'Carlos', 'López', 456789123, 'carlos.lopez@example.com'),
+--(44332211, 'Ana', 'Martínez', 321654987, 'ana.martinez@example.com'),
+--(55667788, 'Luis', 'Fernández', 654321789, 'luis.fernandez@example.com');
+--GO
+
+--AUTOR
+--INSERT INTO Autor (NombreAutor, ApellidoAutor) VALUES
+--('Gabriel', 'García Márquez'),
+--('Isabel', 'Allende'),
+--('Jorge', 'Luis Borges'),
+--('Julio', 'Cortázar'),
+--('Mario', 'Vargas Llosa');
+--GO
+
+--GENERO
+--INSERT INTO GENERO (NombreGenero) VALUES
+--('Ficción'),
+--('No Ficción'),
+--('Ciencia Ficción'),
+--('Romance'),
+--('Terror');
+--GO
+
+--EDITORIAL
+--INSERT INTO Editorial (NombreEditorial) VALUES
+--('Editorial Planeta'),
+--('Penguin Random House'),
+--('HarperCollins'),
+--('Grupo Anaya'),
+--('Ediciones SM');
+--GO
+
+--LIBRO
+--INSERT INTO Libro (Titulo, IDAutor, IDGenero, Descripcion, CantidadDePaginas, FechaDePublicacion, IDEditorial, Stock, Precio) VALUES
+--('Cien Años de Soledad', 1, 1, 'Una novela que narra la historia de la familia Buendía a lo largo de varias generaciones.', 417, '1967-06-05', 1, 5, 29.99),
+--('La Casa de los Espíritus', 2, 1, 'La saga de una familia chilena combinando realismo mágico y política.', 350, '1982-03-01', 2, 5, 24.99),
+--('Ficciones', 3, 3, 'Una colección de relatos cortos que exploran la realidad y la ficción.', 224, '1944-05-01', 3, 5, 19.99),
+--('Rayuela', 4, 1, 'Una novela experimental que desafía la estructura narrativa tradicional.', 500, '1963-09-28', 4, 5, 27.50),
+--('La Ciudad y los Perros', 5, 1, 'Una cruda mirada a la vida en una academia militar en Perú.', 368, '1963-11-02', 5, 10, 22.75);
+--GO
+
+--SELECTS
+--SELECT * FROM Cliente;
+--SELECT * FROM Autor;
+--SELECT * FROM GENERO;
+--SELECT * FROM Editorial;
+--SELECT * FROM Libro;
+--SELECT * FROM Compras;
+--SELECT * FROM Devoluciones;
+
+
+--PROCEDIMIENTOS
+
+--DBCC CHECKIDENT ('Compras', RESEED, 0);
+
+--PROCEDIMIENTO PARA REGISTRAR LA COMPRA
+CREATE PROCEDURE RegistrarCompra (
+	@IDCliente INT,
+    @IDLibroComprado INT,
+    @Importe MONEY,
+    @MedioDePago NVARCHAR(50)
+	)
+AS
+BEGIN
+    INSERT INTO Compras (IDCliente, FechaDeCompra, IDLibroComprado, Importe, MedioDePago)
+    VALUES (@IDCliente, GETDATE(), @IDLibroComprado, @Importe, @MedioDePago);
+END;
+
+EXEC RegistrarCompra
+	@IDCliente = 4,
+	@IDLibroComprado = 1,
+    @Importe = 350,
+    @MedioDePago = 'Tarjeta';
+
+--PROCEDIMIENTO PARA REGISTRAR DEVOLUCIONES
+CREATE PROCEDURE RegistrarDevolucion (
+	@IDCliente INT,
+	@IDCompra INT,
+	@ImporteDevolucion MONEY,
+	@IDLibro INT
+	)
+AS
+BEGIN
+	INSERT INTO Devoluciones (IDCliente, IDCompra, FechaDevolucion, ImporteDevolucion, IDLibroDevuelto)
+	VALUES (@IDCliente, @IDCompra, GETDATE(), @ImporteDevolucion, @IDLibro);
+END
+
+EXEC RegistrarDevolucion
+	@IDCliente = 1,
+	@IDCompra = 1,
+	@ImporteDevolucion = 1200,
+	@IDLibro = 1;
+
+--TRIGGERS
+
+--ACTUALIZAR EL STOCK LUEGO DE REALIZAR UNA COMPRA
+CREATE TRIGGER ActualizarStock ON Compras
+AFTER INSERT
+AS
+BEGIN
+	UPDATE L
+	SET L.Stock = L.Stock - C.CantidadComprada
+	FROM Libro L
+	INNER JOIN(
+		SELECT IDLibroComprado, COUNT(*) AS CantidadComprada
+		FROM inserted
+		GROUP BY IDLibroComprado
+	)
+	C ON L.IDLibro = C.IDLibroComprado
+END
+
+--ACTUALIZAR EL STOCK LUEGO DE UNA DEVOLUCIÓN
+CREATE TRIGGER ActualizarStockDevolucion ON Devoluciones
+AFTER INSERT
+AS
+BEGIN
+	UPDATE L
+	SET L.Stock = L.Stock + D.CantidadComprada
+	FROM Libro L
+	INNER JOIN(
+		SELECT IDLibroDevuelto, COUNT(*) AS CantidadComprada
+		FROM inserted /*contiene las filas de la tabla que activa el trigger*/
+		GROUP BY IDLibroDevuelto
+	)
+	D ON L.IDLibro = D.IDLibroDevuelto
+END
