@@ -56,9 +56,11 @@
 --)
 --GO
 
+--ALTER TABLE Compras
+--ADD Estado NVARCHAR(50);
+
 --CREATE TABLE Devoluciones (
 --	IDDevolucion INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
---	IDCliente INT NOT NULL FOREIGN KEY REFERENCES Cliente(IDCliente),
 --	IDCompra INT NOT NULL FOREIGN KEY REFERENCES Compras(IDCompra),
 --	FechaDevolucion DATETIME NOT NULL,
 --	ImporteDevolucion MONEY NOT NULL,
@@ -122,48 +124,55 @@
 --SELECT * FROM Compras;
 --SELECT * FROM Devoluciones;
 
+--SELECT *
+--FROM Devoluciones D
+--JOIN Compras C ON D.IDCompra = C.IDCompra;
 
 --PROCEDIMIENTOS
 
---DBCC CHECKIDENT ('Compras', RESEED, 0);
+--DBCC CHECKIDENT ('Compras', RESEED, 1);
 
 --PROCEDIMIENTO PARA REGISTRAR LA COMPRA
 CREATE PROCEDURE RegistrarCompra (
 	@IDCliente INT,
     @IDLibroComprado INT,
     @Importe MONEY,
-    @MedioDePago NVARCHAR(50)
+    @MedioDePago NVARCHAR(50),
+	@Estado NVARCHAR(50)
 	)
 AS
 BEGIN
-    INSERT INTO Compras (IDCliente, FechaDeCompra, IDLibroComprado, Importe, MedioDePago)
-    VALUES (@IDCliente, GETDATE(), @IDLibroComprado, @Importe, @MedioDePago);
+    INSERT INTO Compras (IDCliente, FechaDeCompra, IDLibroComprado, Importe, MedioDePago, Estado)
+    VALUES (@IDCliente, GETDATE(), @IDLibroComprado, @Importe, @MedioDePago, @Estado);
 END;
 
 EXEC RegistrarCompra
-	@IDCliente = 4,
-	@IDLibroComprado = 1,
+	@IDCliente = 2,
+	@IDLibroComprado = 3,
     @Importe = 350,
-    @MedioDePago = 'Tarjeta';
+    @MedioDePago = 'Efectivo',
+	@Estado = 'No devuelto';
 
 --PROCEDIMIENTO PARA REGISTRAR DEVOLUCIONES
 CREATE PROCEDURE RegistrarDevolucion (
-	@IDCliente INT,
 	@IDCompra INT,
 	@ImporteDevolucion MONEY,
 	@IDLibro INT
 	)
 AS
 BEGIN
-	INSERT INTO Devoluciones (IDCliente, IDCompra, FechaDevolucion, ImporteDevolucion, IDLibroDevuelto)
-	VALUES (@IDCliente, @IDCompra, GETDATE(), @ImporteDevolucion, @IDLibro);
+	INSERT INTO Devoluciones (IDCompra, FechaDevolucion, ImporteDevolucion, IDLibroDevuelto)
+	VALUES (@IDCompra, GETDATE(), @ImporteDevolucion, @IDLibro);
+	--Actualizar estado de la compra
+	UPDATE Compras
+	SET Estado = 'Devuelto'
+	WHERE IDCompra = @IDCompra;
 END
 
 EXEC RegistrarDevolucion
-	@IDCliente = 1,
-	@IDCompra = 1,
-	@ImporteDevolucion = 1200,
-	@IDLibro = 1;
+	@IDCompra = 3,
+	@ImporteDevolucion = 350,
+	@IDLibro = 3;
 
 --TRIGGERS
 
