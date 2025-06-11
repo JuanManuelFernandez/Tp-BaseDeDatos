@@ -46,6 +46,15 @@
 --)
 --GO
 
+--ALTER TABLE Libro
+--DROP CONSTRAINT DF__Libro__Disponibi__2DE6D218
+
+--ALTER TABLE Libro
+--DROP COLUMN Disponibilidad;
+
+--ALTER TABLE Libro
+--ADD Disponibilidad BIT NOT NULL DEFAULT 1;
+
 --CREATE TABLE Compras (
 --	IDCompra INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
 --	IDCliente INT NOT NULL FOREIGN KEY REFERENCES Cliente(IDCliente),
@@ -132,6 +141,21 @@
 
 --DBCC CHECKIDENT ('Compras', RESEED, 1);
 
+--PROCEDIMIENTO REPORTE PARAMETRIZADO
+CREATE PROCEDURE Reporte (
+	@IDCliente INT,
+	@FechaDeCompra DATE
+	)
+AS
+BEGIN
+	SELECT IDCompra, IDLibroComprado, Importe FROM Compras 
+	WHERE IDCliente = @IDCliente AND CONVERT(DATE, FechaDeCompra) = @FechaDeCompra;
+END;
+
+EXEC Reporte
+	@IDCliente = 2,
+	@FechaDeCompra = '20250609';
+
 --PROCEDIMIENTO PARA REGISTRAR LA COMPRA
 CREATE PROCEDURE RegistrarCompra (
 	@IDCliente INT,
@@ -148,8 +172,8 @@ END;
 
 EXEC RegistrarCompra
 	@IDCliente = 2,
-	@IDLibroComprado = 3,
-    @Importe = 350,
+	@IDLibroComprado = 8,
+    @Importe = 39.99,
     @MedioDePago = 'Efectivo',
 	@Estado = 'No devuelto';
 
@@ -170,9 +194,9 @@ BEGIN
 END
 
 EXEC RegistrarDevolucion
-	@IDCompra = 3,
-	@ImporteDevolucion = 350,
-	@IDLibro = 3;
+	@IDCompra = 4,
+	@ImporteDevolucion = 39.99,
+	@IDLibro = 8;
 
 --TRIGGERS
 
@@ -206,4 +230,13 @@ BEGIN
 		GROUP BY IDLibroDevuelto
 	)
 	D ON L.IDLibro = D.IDLibroDevuelto
+END
+--ACTUALIZAR DISPONIBILIDAD
+CREATE TRIGGER ActualizarDisponibilidad ON Libro
+AFTER UPDATE
+AS
+BEGIN
+	UPDATE Libro
+	SET Disponibilidad = CASE WHEN Libro.Stock = 0 THEN 0 ELSE 1 END
+	WHERE IDLibro IN (SELECT DISTINCT IDLibro FROM inserted);
 END
