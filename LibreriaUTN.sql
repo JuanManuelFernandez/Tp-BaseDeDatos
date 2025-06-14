@@ -137,6 +137,70 @@
 --FROM Devoluciones D
 --JOIN Compras C ON D.IDCompra = C.IDCompra;
 
+--VISTAS
+
+--GENEROS
+CREATE VIEW GeneroFiccion AS
+SELECT L.Titulo, (A.NombreAutor + ' ' + A.ApellidoAutor) AS Autor
+FROM Libro L
+INNER JOIN Autor A ON L.IDAutor = A.IDAutor
+INNER JOIN GENERO G ON L.IDGenero = G.IDGenero
+WHERE G.NombreGenero = 'Ficción';
+
+--DROP VIEW GeneroFiccion;
+
+CREATE VIEW GeneroNoFiccion AS
+SELECT L.Titulo, (A.NombreAutor + ' ' + A.ApellidoAutor) AS Autor
+FROM Libro L
+INNER JOIN Autor A ON L.IDAutor = A.IDAutor
+INNER JOIN GENERO G ON L.IDGenero = G.IDGenero
+WHERE G.NombreGenero = 'No Ficción';
+
+--DROP VIEW GeneroNoFiccion;
+
+CREATE VIEW GeneroCFiccion AS
+SELECT L.Titulo, (A.NombreAutor + ' ' + A.ApellidoAutor) AS Autor
+FROM Libro L
+INNER JOIN Autor A ON L.IDAutor = A.IDAutor
+INNER JOIN GENERO G ON L.IDGenero = G.IDGenero
+WHERE G.NombreGenero = 'Ciencia Ficción';
+
+--DROP VIEW GeneroCFiccion;
+
+CREATE VIEW GeneroRomance AS
+SELECT L.Titulo, (A.NombreAutor + ' ' + A.ApellidoAutor) AS Autor
+FROM Libro L
+INNER JOIN Autor A ON L.IDAutor = A.IDAutor
+INNER JOIN GENERO G ON L.IDGenero = G.IDGenero
+WHERE G.NombreGenero = 'Romance';
+
+--DROP VIEW GeneroRomance;
+
+CREATE VIEW GeneroTerror AS
+SELECT L.Titulo, (A.NombreAutor + ' ' + A.ApellidoAutor) AS Autor
+FROM Libro L
+INNER JOIN Autor A ON L.IDAutor = A.IDAutor
+INNER JOIN GENERO G ON L.IDGenero = G.IDGenero
+WHERE G.NombreGenero = 'Terror';
+
+--DROP VIEW GeneroTerror;
+
+--SELECT VIEWS GENEROS
+SELECT * FROM GeneroFiccion;
+SELECT * FROM GeneroNoFiccion;
+SELECT * FROM GeneroCFiccion;
+SELECT * FROM GeneroRomance;
+SELECT * FROM GeneroTerror;
+
+--SIN STOCK
+CREATE VIEW LibrosSinStock AS
+SELECT Titulo
+FROM Libro
+WHERE Stock = 0;
+
+--SELECT VIEW SinStock
+SELECT * FROM LibrosSinStock;
+
 --PROCEDIMIENTOS
 
 --DBCC CHECKIDENT ('Compras', RESEED, 1);
@@ -171,7 +235,7 @@ BEGIN
 END;
 
 EXEC RegistrarCompra
-	@IDCliente = 2,
+	@IDCliente = 3,
 	@IDLibroComprado = 8,
     @Importe = 39.99,
     @MedioDePago = 'Efectivo',
