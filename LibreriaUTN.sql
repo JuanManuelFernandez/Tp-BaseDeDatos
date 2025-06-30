@@ -47,13 +47,11 @@
 --GO
 
 --ALTER TABLE Libro
---DROP CONSTRAINT DF__Libro__Disponibi__2DE6D218
-
---ALTER TABLE Libro
---DROP COLUMN Disponibilidad;
-
---ALTER TABLE Libro
 --ADD Disponibilidad BIT NOT NULL DEFAULT 1;
+
+--ALTER TABLE Libro
+--ADD Eliminado BIT NOT NULL DEFAULT 0;
+
 
 --CREATE TABLE Compras (
 --	IDCompra INT PRIMARY KEY IDENTITY(1,1) NOT NULL,
@@ -262,6 +260,31 @@ EXEC RegistrarDevolucion
 	@ImporteDevolucion = 39.99,
 	@IDLibro = 8;
 
+--PROCEDIIMENTO PARA ELIMINAR UN LIBRO
+CREATE PROCEDURE EliminarLibro(
+	@IDLibro INT
+	)
+AS
+BEGIN
+	DELETE FROM Libro WHERE IDLibro = @IDLibro;
+END
+
+EXEC EliminarLibro
+	@IDLibro = 1;
+
+--PROCEDIMIENTO PARA MODIFICAR EL ESTADO "Eliminado"
+CREATE PROCEDURE DarDeAltaLibro(
+	@IDLibro INT
+	)
+AS
+BEGIN
+	UPDATE Libro SET Eliminado = 0 FROM Libro
+	WHERE IDLibro = @IDLibro;
+END
+
+EXEC DarDeAltaLibro
+	@IDLibro = 1;
+
 --TRIGGERS
 
 --ACTUALIZAR EL STOCK LUEGO DE REALIZAR UNA COMPRA
@@ -295,6 +318,7 @@ BEGIN
 	)
 	D ON L.IDLibro = D.IDLibroDevuelto
 END
+
 --ACTUALIZAR DISPONIBILIDAD
 CREATE TRIGGER ActualizarDisponibilidad ON Libro
 AFTER UPDATE
@@ -303,4 +327,15 @@ BEGIN
 	UPDATE Libro
 	SET Disponibilidad = CASE WHEN Libro.Stock = 0 THEN 0 ELSE 1 END
 	WHERE IDLibro IN (SELECT DISTINCT IDLibro FROM inserted);
+END
+
+--ACTUALIZAR Eliminado a true
+CREATE TRIGGER ActualizarEliminado ON Libro
+INSTEAD OF DELETE
+AS
+BEGIN
+	UPDATE L
+	SET L.Eliminado = 1
+	FROM Libro L
+	JOIN DELETED D ON L.IDLibro = D.IDLibro;
 END
